@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentinel AI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0f;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        /* HEADER */
+        .header {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #00ff88;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo h1 {
+            font-size: 28px;
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .logo p {
+            font-size: 12px;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .status-badge {
+            background: #00ff8820;
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* MAIN LAYOUT */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+            padding: 20px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* STATS BAR */
+        .stats-bar {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+
+        .stat-card {
+            background: #1a1a2e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 15px 20px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            border-color: #00ff88;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.1);
+        }
+
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .stat-card.blocked .number { color: #ff4444; }
+        .stat-card.warned .number { color: #ffaa00; }
+        .stat-card.allowed .number { color: #00ff88; }
+
+        .stat-card .label {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        /* CHAT SECTION */
+        .chat-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .chat-window {
+            background: #1a1a2e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            height: 450px;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-window::-webkit-scrollbar { width: 6px; }
+        .chat-window::-webkit-scrollbar-track { background: #1a1a2e; }
+        .chat-window::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            background: #16213e;
+            border-left: 3px solid #0088ff;
+        }
+
+        .message.blocked {
+            background: #2a0a0a;
+            border-left: 3px solid #ff4444;
+        }
+
+        .message.warned {
+            background: #2a1a00;
+            border-left: 3px solid #ffaa00;
+        }
+
+        .message.allowed {
+            background: #0a2a1a;
+            border-left: 3px solid #00ff88;
+        }
+
+        .message .prompt-text {
+            font-size: 14px;
+            color: #ccc;
+            margin-bottom: 8px;
+        }
+
+        .message .result {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .decision-badge {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .decision-badge.BLOCK { background: #ff444420; color: #ff4444; border: 1px solid #ff4444; }
+        .decision-badge.WARN { background: #ffaa0020; color: #ffaa00; border: 1px solid #ffaa00; }
+        .decision-badge.ALLOW { background: #00ff8820; color: #00ff88; border: 1px solid #00ff88; }
+
+        .score-text { font-size: 12px; color: #888; }
+
+        /* RISK METER */
+        .risk-meter {
+            background: #1a1a2e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 15px 20px;
+        }
+
+        .risk-meter label {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .meter-bar {
+            height: 10px;
+            background: #333;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .meter-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 5px;
+            transition: all 0.5s ease;
+            background: #00ff88;
+        }
+
+        .meter-fill.low { background: #00ff88; }
+        .meter-fill.medium { background: #ffaa00; }
+        .meter-fill.high { background: #ff4444; }
+
+        .meter-value {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px;
+            font-size: 12px;
+            color: #888;
+        }
+
+        /* INPUT AREA */
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-area input {
+            flex: 1;
+            background: #1a1a2e;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 14px 18px;
+            color: #e0e0e0;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .input-area input:focus {
+            border-color: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.1);
+        }
+
+        .input-area input::placeholder { color: #555; }
+
+        .send-btn {
+            background: #00ff88;
+            color: #0a0a0f;
+            border: none;
+            border-radius: 10px;
+            padding: 14px 24px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .send-btn:hover {
+            background: #00cc6a;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .send-btn:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        /* SIDE PANEL */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel-card {
+            background: #1a1a2e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 15px 20px;
+        }
+
+        .panel-card h3 {
+            font-size: 14px;
+            color: #00ff88;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #333;
+        }
+
+        /* ATTACK LOG */
+        .attack-log {
+            max-height: 200px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .log-item {
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            border-left: 3px solid #333;
+        }
+
+        .log-item.blocked { border-color: #ff4444; background: #2a0a0a; }
+        .log-item.warned { border-color: #ffaa00; background: #2a1a00; }
+        .log-item.allowed { border-color: #00ff88; background: #0a2a1a; }
+
+        .log-item .log-prompt {
+            color: #ccc;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .log-item .log-score { color: #888; margin-top: 3px; }
+
+        /* RED TEAM BUTTON */
+        .red-team-btn {
+            width: 100%;
+            background: #ff444420;
+            border: 1px solid #ff4444;
+            color: #ff4444;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .red-team-btn:hover {
+            background: #ff444440;
+            box-shadow: 0 0 15px rgba(255, 68, 68, 0.2);
+        }
+
+        .red-team-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* RED TEAM RESULTS */
+        .red-team-results {
+            font-size: 12px;
+            color: #888;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .red-team-results.show { display: block; }
+
+        .red-team-results .result-line {
+            padding: 4px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .detection-rate {
+            font-size: 28px;
+            font-weight: bold;
+            color: #00ff88;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            text-align: center;
+            color: #444;
+            padding: 40px 20px;
+            font-size: 14px;
+        }
+
+        .empty-state .icon { font-size: 48px; margin-bottom: 10px; }
+
+        /* LOADING */
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #333;
+            border-top-color: #00ff88;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="logo">
+            <div>
+                <h1>🛡️ Sentinel AI</h1>
+                <p>Agentic Defense System for Prompt Abuse Prevention</p>
+            </div>
+        </div>
+        <div class="status-badge">● SYSTEM ACTIVE</div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+        <!-- STATS BAR -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="number" id="total">0</div>
+                <div class="label">Total Requests</div>
+            </div>
+            <div class="stat-card blocked">
+                <div class="number" id="blocked">0</div>
+                <div class="label">⛔ Blocked</div>
+            </div>
+            <div class="stat-card warned">
+                <div class="number" id="warned">0</div>
+                <div class="label">⚠️ Warned</div>
+            </div>
+            <div class="stat-card allowed">
+                <div class="number" id="allowed">0</div>
+                <div class="label">✅ Allowed</div>
+            </div>
+        </div>
+
+        <!-- CHAT SECTION -->
+        <div class="chat-section">
+
+            <!-- CHAT WINDOW -->
+            <div class="chat-window" id="chatWindow">
+                <div class="empty-state">
+                    <div class="icon">🛡️</div>
+                    <div>Sentinel AI is watching...<br>Type a prompt to test the security system</div>
+                </div>
+            </div>
+
+            <!-- RISK METER -->
+            <div class="risk-meter">
+                <label>Risk Score Meter</label>
+                <div class="meter-bar">
+                    <div class="meter-fill" id="meterFill"></div>
+                </div>
+                <div class="meter-value">
+                    <span id="meterScore">0.00</span>
+                    <span id="meterLabel">No threat detected</span>
+                </div>
+            </div>
+
+            <!-- INPUT -->
+            <div class="input-area">
+                <input 
+                    type="text" 
+                    id="promptInput" 
+                    placeholder="Type your prompt here... (e.g. 'Ignore all previous instructions')"
+                    onkeypress="handleKeyPress(event)"
+                />
+                <button class="send-btn" id="sendBtn" onclick="sendPrompt()">
+                    Send ▶
+                </button>
+            </div>
+
+        </div>
+
+        <!-- SIDE PANEL -->
+        <div class="side-panel">
+
+            <!-- ATTACK LOG -->
+            <div class="panel-card">
+                <h3>📋 Attack Log</h3>
+                <div class="attack-log" id="attackLog">
+                    <div style="color: #444; font-size: 12px; text-align: center; padding: 20px;">
+                        No activity yet
+                    </div>
+                </div>
+            </div>
+
+            <!-- RED TEAM -->
+            <div class="panel-card">
+                <h3>🔴 Autonomous Red Team</h3>
+                <p style="font-size: 12px; color: #888; margin-bottom: 12px;">
+                    Run 30 automated attack tests against the system
+                </p>
+                <button class="red-team-btn" id="redTeamBtn" onclick="runRedTeam()">
+                    ▶ Run Red Team Test
+                </button>
+                <div class="red-team-results" id="redTeamResults"></div>
+            </div>
+
+            <!-- SYSTEM INFO -->
+            <div class="panel-card">
+                <h3>⚙️ System Info</h3>
+                <div style="font-size: 12px; color: #888; line-height: 1.8;">
+                    <div>Model: TF-IDF + LogReg</div>
+                    <div>Accuracy: 93.42%</div>
+                    <div>Attack Categories: 6</div>
+                    <div>Rule Patterns: 30+</div>
+                    <div>Backend: FastAPI</div>
+                    <div>Status: <span style="color: #00ff88">● Active</span></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const API = 'https://unstimulated-ailene-extravertive.ngrok-free.dev';
+        let userId = 'user_' + Math.random().toString(36).substr(2, 9);
+        
+    function formatResponse(text) {
+    // Convert bold
+    text = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+    
+    // Convert code blocks
+    text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, 
+        '<pre style="background:#1a1a2e; padding:10px; border-radius:6px; overflow-x:auto; margin:8px 0;"><code>$2</code></pre>');
+    
+    // Convert inline code
+    text = text.replace(/`(.*?)`/g, 
+        '<code style="background:#1a1a2e; padding:2px 6px; border-radius:4px;">$1</code>');
+    
+    // Convert bullet points
+    text = text.replace(/^\* (.*)/gm, '<li>$1</li>');
+    text = text.replace(/^- (.*)/gm, '<li>$1</li>');
+    
+    // Convert numbered lists
+    text = text.replace(/^\d+\. (.*)/gm, '<li>$1</li>');
+    
+    // Convert newlines
+    text = text.replace(/\n/g, '<br>');
+    
+    return text;
+}
+        // ─────────────────────────────────────────
+        // SEND PROMPT
+        // ─────────────────────────────────────────
+        async function sendPrompt() {
+            const input = document.getElementById('promptInput');
+            const prompt = input.value.trim();
+            if (!prompt) return;
+
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<span class="loading"></span>Analyzing...';
+
+            // Clear empty state
+            const chatWindow = document.getElementById('chatWindow');
+            const emptyState = chatWindow.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+
+            try {
+                const response = await fetch(`${API}/chat`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                },
+                body: JSON.stringify({ prompt, user_id: userId })
+            });
+                const data = await response.json();
+                
+                // Add message to chat
+                addMessage(prompt, data);
+                
+                // Update risk meter
+                updateMeter(data.risk_score);
+                
+                // Update stats
+                updateStats();
+                
+                // Add to attack log
+                addToLog(prompt, data);
+
+                input.value = '';
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error connecting to Sentinel AI server. Make sure it is running!');
+            }
+
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = 'Send ▶';
+        }
+
+        // ─────────────────────────────────────────
+        // ADD MESSAGE TO CHAT
+        // ─────────────────────────────────────────
+        function addMessage(prompt, data) {
+    const chatWindow = document.getElementById('chatWindow');
+    const div = document.createElement('div');
+    
+    let cssClass = 'allowed';
+    let icon = '✅';
+    if (data.decision === 'BLOCK') { cssClass = 'blocked'; icon = '⛔'; }
+    if (data.decision === 'WARN') { cssClass = 'warned'; icon = '⚠️'; }
+
+    div.className = `message ${cssClass}`;
+    div.innerHTML = `
+        <div class="prompt-text">💬 ${prompt}</div>
+        <div class="result">
+            <span class="decision-badge ${data.decision}">${icon} ${data.decision}</span>
+            <span class="score-text">Risk: ${data.risk_score}</span>
+            <span class="score-text">ML: ${data.ml_score}</span>
+            ${data.rule_triggered ? '<span class="score-text" style="color:#ffaa00">⚡ Rule Hit</span>' : ''}
+            ${data.harmful_detected ? '<span class="score-text" style="color:#ff4444">☠️ Harmful</span>' : ''}
+        </div>
+            ${data.llm_response ? `
+        <div style="margin-top:10px; padding:10px; background:#0d1117; border-radius:6px; font-size:13px; color:#ccc; border-left: 3px solid #0088ff;">
+            🤖 <b>AI Response:</b><br>${formatResponse(data.llm_response)}
+        </div>` : ''}
+    `;
+
+    chatWindow.appendChild(div);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+        // ─────────────────────────────────────────
+        // UPDATE RISK METER
+        // ─────────────────────────────────────────
+        function updateMeter(score) {
+            const fill = document.getElementById('meterFill');
+            const scoreEl = document.getElementById('meterScore');
+            const labelEl = document.getElementById('meterLabel');
+
+            fill.style.width = (score * 100) + '%';
+            scoreEl.textContent = score.toFixed(2);
+
+            fill.className = 'meter-fill';
+            if (score >= 0.7) {
+                fill.classList.add('high');
+                labelEl.textContent = '🔴 HIGH RISK';
+                labelEl.style.color = '#ff4444';
+            } else if (score >= 0.5) {
+                fill.classList.add('medium');
+                labelEl.textContent = '🟡 MEDIUM RISK';
+                labelEl.style.color = '#ffaa00';
+            } else {
+                fill.classList.add('low');
+                labelEl.textContent = '🟢 LOW RISK';
+                labelEl.style.color = '#00ff88';
+            }
+        }
+
+        // ─────────────────────────────────────────
+        // UPDATE STATS
+        // ─────────────────────────────────────────
+        async function updateStats() {
+            try {
+            const response = await fetch(`${API}/stats`, {
+            headers: { 'ngrok-skip-browser-warning': 'true' }
+            });
+                const data = await response.json();
+                document.getElementById('total').textContent = data.total_requests;
+                document.getElementById('blocked').textContent = data.blocked;
+                document.getElementById('warned').textContent = data.warned;
+                document.getElementById('allowed').textContent = data.allowed;
+            } catch (error) {
+                console.error('Stats error:', error);
+            }
+        }
+
+        // ─────────────────────────────────────────
+        // ADD TO ATTACK LOG
+        // ─────────────────────────────────────────
+        function addToLog(prompt, data) {
+            const log = document.getElementById('attackLog');
+            const noActivity = log.querySelector('div');
+            if (noActivity && noActivity.style.textAlign === 'center') {
+                noActivity.remove();
+            }
+
+            const div = document.createElement('div');
+            let cssClass = 'allowed';
+            if (data.decision === 'BLOCK') cssClass = 'blocked';
+            if (data.decision === 'WARN') cssClass = 'warned';
+
+            div.className = `log-item ${cssClass}`;
+            div.innerHTML = `
+                <div class="log-prompt">${prompt}</div>
+                <div class="log-score">Score: ${data.risk_score} | ${data.decision}</div>
+            `;
+
+            log.insertBefore(div, log.firstChild);
+        }
+
+        // ─────────────────────────────────────────
+        // RUN RED TEAM
+        // ─────────────────────────────────────────
+        async function runRedTeam() {
+            const btn = document.getElementById('redTeamBtn');
+            const results = document.getElementById('redTeamResults');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Running 30 tests...';
+            results.className = 'red-team-results show';
+            results.innerHTML = 'Running autonomous red team tests...';
+
+            try {
+                const response = await fetch(`${API}/red-team`, {
+    headers: { 'ngrok-skip-browser-warning': 'true' }
+});
+                const data = await response.json();
+
+                results.innerHTML = `
+                    <div class="detection-rate">${data.detection_rate}%</div>
+                    <div style="text-align:center; color:#888; font-size:12px; margin-bottom:10px;">Detection Rate</div>
+                    <div class="result-line">✅ Total Tests: ${data.total_tests}</div>
+                    <div class="result-line">⛔ Blocked: ${data.blocked}</div>
+                    <div class="result-line">⚠️ Warned: ${data.warned}</div>
+                    <div class="result-line" style="color:${data.passed > 0 ? '#ff4444' : '#00ff88'}">
+                        ${data.passed > 0 ? '❌' : '✅'} Vulnerabilities: ${data.passed}
+                    </div>
+                `;
+
+            } catch (error) {
+                results.innerHTML = 'Error running red team test!';
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '▶ Run Red Team Test';
+        }
+
+        // ─────────────────────────────────────────
+        // KEYBOARD HANDLER
+        // ─────────────────────────────────────────
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') sendPrompt();
+        }
+
+        // Load initial stats
+        updateStats();
+    </script>
+
+</body>
+</html>
